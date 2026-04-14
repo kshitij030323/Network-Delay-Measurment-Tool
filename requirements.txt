@@ -1,0 +1,15 @@
+# Python dependencies for the SDN Network Delay Measurement Tool.
+# Mininet itself is a system package (apt install mininet) and is NOT listed
+# here because it cannot be installed reliably via pip.
+#
+# Install with:
+#   pip install -r requirements.txt
+#
+# Tested on Ubuntu 20.04 / Python 3.8 and Ubuntu 22.04 / Python 3.10.
+
+# Ryu is the OpenFlow controller framework used for src/controller.py
+ryu==4.34
+# Ryu pulls in these but we pin them to avoid eventlet/dnspython breakage
+# on newer Python versions.
+eventlet==0.30.2
+dnspython==1.16.0

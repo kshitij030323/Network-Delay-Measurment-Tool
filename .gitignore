@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Runtime / logs
+*.log
+/tmp/
+nohup.out
+
+# Result artifacts (commit only reference runs explicitly if you want)
+results/*.csv
+results/*.json
+!results/.gitkeep
+
+# Packet captures
+*.pcap
+*.pcapng
+
+# Screenshots folder placeholders
+docs/screenshots/*
+!docs/screenshots/.gitkeep
