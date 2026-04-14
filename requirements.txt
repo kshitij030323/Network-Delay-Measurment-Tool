@@ -7,9 +7,17 @@
 #
 # Tested on Ubuntu 20.04 / Python 3.8 and Ubuntu 22.04 / Python 3.10.
 
-# Ryu is the OpenFlow controller framework used for src/controller.py
+# Ryu is the OpenFlow controller framework used for src/controller.py.
 ryu==4.34
-# Ryu pulls in these but we pin them to avoid eventlet/dnspython breakage
-# on newer Python versions.
-eventlet==0.30.2
-dnspython==1.16.0
+
+# Ryu's pinned eventlet (0.30.2) is broken on Python >= 3.10 because
+# socket.timeout became an alias for the immutable builtin TimeoutError.
+# 0.33.3 fixes that *but* removes eventlet.wsgi.ALREADY_HANDLED which Ryu
+# imports at class-definition time. We work around it in README §5/§11:
+#   echo "ALREADY_HANDLED = []" >> \
+#       $(python3 -c 'import eventlet.wsgi,os;print(os.path.dirname(eventlet.wsgi.__file__))')/wsgi.py
+eventlet==0.33.3
+
+# dnspython 1.16 uses collections.MutableMapping which was removed in 3.10.
+# 2.3+ is the first clean release for Python 3.10.
+dnspython>=2.3.0

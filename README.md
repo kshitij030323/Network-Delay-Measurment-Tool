@@ -162,11 +162,26 @@ python3 -m pip install --upgrade pip
 python3 -m pip install -r requirements.txt
 ```
 
-If Ryu fails on Python ≥ 3.10, install it in a venv pinned to Python 3.9, or
-use:
+### 5.2a Python 3.10 (Ubuntu 22.04) post-install fix
+
+Ryu 4.34 was last released in 2020 and depends on two Python APIs that
+broke in Python 3.10. After `pip install -r requirements.txt`, run:
 
 ```bash
-python3 -m pip install "ryu @ git+https://github.com/faucetsdn/ryu"
+# Add back the ALREADY_HANDLED constant that eventlet 0.33+ removed
+# (Ryu still imports it at class-definition time, but we don't use the
+# feature). The sed uses python to resolve the correct site-packages path.
+EVENTLET_WSGI=$(python3 -c 'import eventlet.wsgi, os; print(eventlet.wsgi.__file__)')
+grep -q 'ALREADY_HANDLED' "$EVENTLET_WSGI" || \
+    echo 'ALREADY_HANDLED = []' >> "$EVENTLET_WSGI"
+```
+
+If `pip3 install --user` was used, also make sure `~/.local/bin` is on
+`PATH` so `ryu-manager` resolves:
+
+```bash
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
 ```
 
 ### 5.3 Verify
@@ -427,7 +442,10 @@ functional regression check:
 | Controller not listening on 6633         | Something else grabs the port: `sudo ss -ltnp \| grep 6633`  |
 | `pingall` shows X (full loss)            | Controller not running, or `BLOCK_H2_TO_H4=1` blocks h2↔h4   |
 | Ping RTT is 0.05 ms (too low)            | Mininet isn't using `TCLink`; re-run `src/topology.py`       |
-| Ryu crashes on import (`eventlet`)       | `pip install eventlet==0.30.2 dnspython==1.16.0`             |
+| Ryu crashes: `cannot set 'is_timeout' attribute of immutable type 'TimeoutError'` | Python 3.10: `pip3 install --user --force-reinstall eventlet==0.33.3` |
+| Ryu crashes: `AttributeError: module 'collections' has no attribute 'MutableMapping'` | `pip3 install --user --upgrade 'dnspython>=2.3.0'`           |
+| Ryu crashes: `ImportError: cannot import name 'ALREADY_HANDLED' from 'eventlet.wsgi'` | See §5.2a — append `ALREADY_HANDLED = []` to eventlet/wsgi.py |
+| `ryu-manager: command not found` after pip install | `export PATH="$HOME/.local/bin:$PATH"`                    |
 
 ---
 
