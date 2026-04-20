@@ -403,23 +403,45 @@ by `src/controller.py`.
 
 ## 9. Proof of Execution
 
-Place screenshots / logs here (relative links render on GitHub):
+The rubric asks for **flow tables** and **ping / iperf results** as logs or
+screenshots. A single command captures the entire bundle:
 
-- Flow tables from all four switches (`scripts/show_flows.sh` output) →
-  `docs/screenshots/flow_tables.png`
-- `h1 ping h4` on Path A vs Path B side-by-side →
-  `docs/screenshots/path_compare.png`
-- `h2 ping h4` blocked vs `h2 ping h3` allowed →
-  `docs/screenshots/firewall.png`
-- Wireshark capture with `openflow_v4` filter →
-  `docs/screenshots/wireshark_openflow.png`
-- `iperf` between h1 and h4 →
-  `docs/screenshots/iperf.png`
-- CSV report opened in a spreadsheet →
-  `docs/screenshots/csv_report.png`
+```bash
+sudo ./scripts/capture_proof.sh
+```
 
-> After you record your demo run, drop PNGs into `docs/screenshots/` and the
-> links above become live on GitHub.
+This produces `docs/proof_of_execution/` with:
+
+| Artifact                              | What it shows                                                       |
+|---------------------------------------|---------------------------------------------------------------------|
+| `SUMMARY.md`                          | Human-readable index with tables + transcripts (open this first)    |
+| `controller.log`                      | Full Ryu log: ARP proxy replies, flow installs, periodic stats      |
+| `openflow.pcap`                       | tcpdump of `lo:6633` – open in Wireshark with filter `openflow_v4`  |
+| `flows_<N>_<tag>.log`                 | `ovs-ofctl dump-flows` for every switch at each scenario checkpoint |
+| `ping_<label>.log`                    | Raw ping transcript for every scenario                              |
+| `iperf_pathA.log` / `iperf_pathB.log` | TCP throughput on each path                                         |
+| `run_tests_stdout.log`                | Console output of the full test run                                 |
+
+The scenario reports (`results/scenario_*.csv` + `.json`) are generated at
+the same time.
+
+### 9.1 Optional: live screenshots
+
+If your submission also requires visuals, run the capture command above
+and — while it's running — keep a second terminal open showing:
+
+```bash
+watch -n1 sudo ./scripts/show_flows.sh    # flow tables refreshing live
+```
+
+and a third terminal showing the controller log:
+
+```bash
+tail -f docs/proof_of_execution/controller.log
+```
+
+Screenshot each at the moments the SUMMARY highlights, and drop the PNGs
+into `docs/screenshots/`.
 
 ---
 
