@@ -152,37 +152,49 @@ def scenario_path_compare_auto(results_dir: str):
         net.stop()
 
 
+SCENARIO_COOKIE = '0x1234'
+
+
 def _install_path_ofctl(mode: str):
-    """Directly push OpenFlow rules with ovs-ofctl for repeatable tests."""
+    """Directly push OpenFlow rules with ovs-ofctl for repeatable tests.
+
+    Scenario-installed rules are tagged with a distinctive cookie so we can
+    remove them without touching the controller-installed defaults or
+    firewall drops.
+    """
     import subprocess
 
+    # (switch, match, out_port)
     rules_A = [
-        # (switch, flow)
-        ('s1', 'priority=200,ip,nw_src=10.0.0.1,nw_dst=10.0.0.4,actions=output:2'),
-        ('s2', 'priority=200,ip,nw_src=10.0.0.1,nw_dst=10.0.0.4,actions=output:2'),
-        ('s4', 'priority=200,ip,nw_src=10.0.0.1,nw_dst=10.0.0.4,actions=output:1'),
-        ('s4', 'priority=200,ip,nw_src=10.0.0.4,nw_dst=10.0.0.1,actions=output:2'),
-        ('s2', 'priority=200,ip,nw_src=10.0.0.4,nw_dst=10.0.0.1,actions=output:1'),
-        ('s1', 'priority=200,ip,nw_src=10.0.0.4,nw_dst=10.0.0.1,actions=output:1'),
+        ('s1', 'ip,nw_src=10.0.0.1,nw_dst=10.0.0.4', 2),
+        ('s2', 'ip,nw_src=10.0.0.1,nw_dst=10.0.0.4', 2),
+        ('s4', 'ip,nw_src=10.0.0.1,nw_dst=10.0.0.4', 1),
+        ('s4', 'ip,nw_src=10.0.0.4,nw_dst=10.0.0.1', 2),
+        ('s2', 'ip,nw_src=10.0.0.4,nw_dst=10.0.0.1', 1),
+        ('s1', 'ip,nw_src=10.0.0.4,nw_dst=10.0.0.1', 1),
     ]
     rules_B = [
-        ('s1', 'priority=200,ip,nw_src=10.0.0.1,nw_dst=10.0.0.4,actions=output:3'),
-        ('s3', 'priority=200,ip,nw_src=10.0.0.1,nw_dst=10.0.0.4,actions=output:4'),
-        ('s4', 'priority=200,ip,nw_src=10.0.0.1,nw_dst=10.0.0.4,actions=output:1'),
-        ('s4', 'priority=200,ip,nw_src=10.0.0.4,nw_dst=10.0.0.1,actions=output:3'),
-        ('s3', 'priority=200,ip,nw_src=10.0.0.4,nw_dst=10.0.0.1,actions=output:3'),
-        ('s1', 'priority=200,ip,nw_src=10.0.0.4,nw_dst=10.0.0.1,actions=output:1'),
+        ('s1', 'ip,nw_src=10.0.0.1,nw_dst=10.0.0.4', 3),
+        ('s3', 'ip,nw_src=10.0.0.1,nw_dst=10.0.0.4', 4),
+        ('s4', 'ip,nw_src=10.0.0.1,nw_dst=10.0.0.4', 1),
+        ('s4', 'ip,nw_src=10.0.0.4,nw_dst=10.0.0.1', 3),
+        ('s3', 'ip,nw_src=10.0.0.4,nw_dst=10.0.0.1', 3),
+        ('s1', 'ip,nw_src=10.0.0.4,nw_dst=10.0.0.1', 1),
     ]
 
-    # Wipe previous priority-200 rules and install new ones
+    # Wipe any previous scenario rules (matched by cookie, leaves the
+    # controller's own flows intact).
     for sw in ('s1', 's2', 's3', 's4'):
         subprocess.run(
-            ['ovs-ofctl', '-O', 'OpenFlow13', 'del-flows', sw, 'priority=200'],
+            ['ovs-ofctl', '-O', 'OpenFlow13', 'del-flows', sw,
+             f'cookie={SCENARIO_COOKIE}/-1'],
             check=False,
         )
 
     rules = rules_A if mode == 'A' else rules_B
-    for sw, flow in rules:
+    for sw, match, out_port in rules:
+        flow = (f'cookie={SCENARIO_COOKIE},priority=200,{match},'
+                f'actions=output:{out_port}')
         subprocess.run(
             ['ovs-ofctl', '-O', 'OpenFlow13', 'add-flow', sw, flow],
             check=False,
