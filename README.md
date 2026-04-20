@@ -197,8 +197,20 @@ python3 -m pip install --upgrade pip
 python3 -m pip install -r requirements.txt
 ```
 
-If Ryu fails on Python ≥ 3.10, install it in a venv pinned to Python 3.9, or
-use:
+#### Python 3.10+ post-install patch
+
+On Python 3.10+, `requirements.txt` installs `eventlet==0.33.3` (the earliest
+version that doesn't crash on 3.10), but Ryu 4.34 still imports a constant
+that eventlet 0.33 removed. Re-add it once:
+
+```bash
+EVENTLET_WSGI=$(python3 -c 'import eventlet.wsgi; print(eventlet.wsgi.__file__)')
+grep -q '^ALREADY_HANDLED' "$EVENTLET_WSGI" || \
+    echo 'ALREADY_HANDLED = object()' >> "$EVENTLET_WSGI"
+```
+
+If Ryu still fails on Python ≥ 3.10, install it in a venv pinned to Python 3.9,
+or use the faucetsdn fork:
 
 ```bash
 python3 -m pip install "ryu @ git+https://github.com/faucetsdn/ryu"
@@ -485,7 +497,8 @@ functional regression check:
 | Controller not listening on 6633              | Something else grabs the port: `sudo ss -ltnp \| grep 6633`  |
 | `pingall` shows X (full loss)                 | Controller not running, or `BLOCK_H2_TO_H4=1` blocks h2↔h4   |
 | Ping RTT is 0.05 ms (too low)                 | Mininet isn't using `TCLink`; re-run `src/topology.py`       |
-| Ryu crashes on import (`eventlet`)            | `pip install eventlet==0.30.2 dnspython==1.16.0`             |
+| Ryu crashes on import (`eventlet`), Py 3.8/3.9 | `pip install eventlet==0.30.2 dnspython==1.16.0`            |
+| Ryu crashes on import, Py 3.10+ (`TimeoutError` / `collections.MutableMapping` / `ALREADY_HANDLED`) | `pip install -U eventlet==0.33.3 dnspython==2.3.0`, then run the `ALREADY_HANDLED` echo snippet in §5.2 |
 | `sudo ryu-manager` says "No module named ryu" | Ryu is in `~/.local`; run without sudo (see `start_controller.sh`) |
 
 ---

@@ -9,7 +9,12 @@
 
 # Ryu is the OpenFlow controller framework used for src/controller.py
 ryu==4.34
-# Ryu pulls in these but we pin them to avoid eventlet/dnspython breakage
-# on newer Python versions.
-eventlet==0.30.2
-dnspython==1.16.0
+# Ryu pulls these in transitively. Pins differ by Python version:
+#   * Python 3.8/3.9:  eventlet==0.30.2 + dnspython==1.16.0 work out of the box.
+#   * Python 3.10+ :   0.30.2 crashes (sets attrs on immutable TimeoutError,
+#                      uses six.get_function_code on staticmethod), and
+#                      dnspython 1.16 uses the removed collections.MutableMapping.
+#                      Use 0.33.3 + 2.3.0, then re-add the ALREADY_HANDLED
+#                      constant Ryu 4.34 still imports (see README §11).
+eventlet==0.33.3
+dnspython==2.3.0
